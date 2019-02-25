@@ -4,9 +4,9 @@ version = "0.1.0"
 description = "A OpenAI Gym-compatible environment for V-REP simulator using its B0 remote API"
 authors = ["Anand Balakrishnan <anandbal@usc.edu>"]
 
-packages = [
-    { include = "vrep_gym", from = "src" },
-]
+# packages = [
+#     { include = "vrep_gym", from = "src" },
+# ]
 
 build = "build.py"
 
