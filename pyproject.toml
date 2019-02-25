@@ -1,8 +1,14 @@
 [tool.poetry]
 name = "vrep-gym"
 version = "0.1.0"
-description = ""
+description = "A OpenAI Gym-compatible environment for V-REP simulator using its B0 remote API"
 authors = ["Anand Balakrishnan <anandbal@usc.edu>"]
+
+packages = [
+    { include = "vrep_gym", from = "src" },
+]
+
+build = "build.py"
 
 [tool.poetry.dependencies]
 python = "^3.6"
@@ -16,5 +22,5 @@ pylint = "^2.2"
 autopep8 = "^1.4"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["setuptools","poetry>=0.12"]
 build-backend = "poetry.masonry.api"
