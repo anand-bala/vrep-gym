@@ -1,4 +1,0 @@
-[submodule "src/bluezero"]
-	path = lib/bluezero
-	url = git@github.com:blueworkforce/bluezero.git
-	branch = v2
