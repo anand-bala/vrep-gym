@@ -33,13 +33,13 @@ if [[ "$PLATFORM" == "Darwin" ]] &&  command -v brew >/dev/null 2>&1 ; then
     echo "Assuming brew was used to install Qt5"
     cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_GUI=ON -DBUILD_EXAMPLES=ON \
         -DCMAKE_PREFIX_PATH=$(brew --prefix qt) \
-        -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$SOURCE_DIR/src/vrep_gym/b0/ \
+        -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$SOURCE_DIR/vrep_gym/b0/ \
         .. && \
     cmake --build . --config Debug --target b0 -- -j4
 else
     echo "Going to assume Qt5 can be found by CMake using default configuration"
     cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_GUI=ON -DBUILD_EXAMPLES=ON \
-        -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$SOURCE_DIR/src/vrep_gym/b0/ \
+        -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$SOURCE_DIR/vrep_gym/b0/ \
         .. && \
     cmake --build . --config Debug --target b0 -- -j4
 fi
