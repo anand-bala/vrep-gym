@@ -7,6 +7,7 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 
 from vrep_gym import vrep
+from vrep_gym.vrep.utils import GUIItems
 
 import logging
 
@@ -28,6 +29,12 @@ class VREPEnv(gym.Env, ABC):
 
     def __init__(self, *args, **kwargs):
         kwargs['quit_on_complete'] = True
+        kwargs['headless'] = os.environ.get('VREP_HEADLESS_MODE', False)
+        kwargs['gui_elements_disable'] = (
+            GUIItems.all_elements
+            | (~GUIItems.statusbar)
+            | (~GUIItems.dialogs)
+        )
         self.sim = vrep.VREPSim(*args, **kwargs)
         self.sim.start()
 

@@ -26,17 +26,19 @@ import shutil
 import types
 from collections import deque
 
-from .utils import check_ret, _ProcInstance, SimOpModes, log
+from .utils import check_ret, _ProcInstance, SimOpModes, log, GUIItems
 from .vrep_object import VREPObject
 
 
 PROC_LIST = deque()
+
 
 @atexit.register
 def cleanup():
     global PROC_LIST
     for p in PROC_LIST:  # type: _ProcInstance
         p.end()
+
 
 class VREPSim:
 
@@ -45,7 +47,9 @@ class VREPSim:
                  headless=False,
                  start_auto=False, sim_duration=None, quit_on_complete=False,
                  addon1=None, addon2=None,
-                 scene=None, model=None):
+                 scene=None, model=None,
+                 gui_elements_disable=None,
+                 ):
         if port_num is None:
             port_num = int(random.random() * 1000 + 19999)
         self.port_num = port_num
@@ -55,18 +59,17 @@ class VREPSim:
             vrep_exec = shutil.which('vrep', os.X_OK)
         if vrep_exec is None:
             log.error('Unable to find V-REP executable in env PATH')
-            raise RuntimeError('V-REP executable not found: vrep.sh, vrep, vrep.exe')
+            raise RuntimeError(
+                'V-REP executable not found: vrep.sh, vrep, vrep.exe')
         log.info('Using V-REP executable: {}'.format(vrep_exec))
 
-        launch_args = [
-            vrep_exec,
-            '-gREMOTEAPISERVERSERVICE_{}_{}_{}'.format(port_num, str(debug).upper(), str(sync).upper())
-        ]
+        launch_args = [vrep_exec]
         if headless:
             launch_args.append('-h')
         if start_auto:
             if not sim_duration:
-                raise ValueError('Given auto start, but not how long sim needs to run')
+                raise ValueError(
+                    'Given auto start, but not how long sim needs to run')
             launch_args.append('-g{}'.format(sim_duration))
         if quit_on_complete:
             launch_args.append('-q')
@@ -74,6 +77,13 @@ class VREPSim:
             launch_args.append('-a{}'.format(addon1))
         if addon2:
             launch_args.append('-a{}'.format(addon1))
+
+        launch_args.append(
+            '-gREMOTEAPISERVERSERVICE_{}_{}_{}'.format(port_num, str(debug).upper(), str(sync).upper()))
+        if gui_elements_disable:
+            launch_args.append(
+                '-gGUIITEMS_{:d}'.format(int(gui_elements_disable))
+            )
         if scene:
             launch_args.append('{}'.format(scene))
         if model:
@@ -115,7 +125,8 @@ class VREPSim:
     def start(self):
         if self.started:
             log.error('V-REP Instance has already been started...')
-            raise RuntimeError('You are calling start on this V-REP instance twice. Check your script')
+            raise RuntimeError(
+                'You are calling start on this V-REP instance twice. Check your script')
 
         log.info('Attempting to start V-REP instance')
         self.instance.start()
@@ -123,7 +134,8 @@ class VREPSim:
         retries = 0
         connected = False
         while not connected:
-            log.info('Trying to connect to server on 127.0.0.1:{} [Attempt: {:d}]'.format(self.port_num, retries + 1))
+            log.info('Trying to connect to server on 127.0.0.1:{} [Attempt: {:d}]'.format(
+                self.port_num, retries + 1))
             # vrep.simxFinish(-1) # just in case, close all opened connections
 
             self.client_id = self.simxStart(
@@ -138,12 +150,14 @@ class VREPSim:
             if retries >= 15 and not connected:
                 self.end()
                 raise RuntimeError(
-                    'Unable to connect to V-REP after 15 attempts. Socket Address: 127.0.0.1:{}'.format(self.port_num)
+                    'Unable to connect to V-REP after 15 attempts. Socket Address: 127.0.0.1:{}'.format(
+                        self.port_num)
                 )
 
         log.info('Connected to V-REP Instance at 127.0.0.1:{}'.format(self.port_num))
 
-        objs, = check_ret(self.simxGetObjects(vrep.sim_handle_all, SimOpModes.blocking))
+        objs, = check_ret(self.simxGetObjects(
+            vrep.sim_handle_all, SimOpModes.blocking))
         log.info('Number of objects in scene: ' + str(len(objs)))
 
         # Send some non-blocking data to V-REP
@@ -152,7 +166,8 @@ class VREPSim:
         # Setup a useless signal
         self.simxSetIntegerSignal('asdf', 1, SimOpModes.blocking)
 
-        log.info('V-REP instance started, remote API connection created. Everything seems to be ready.')
+        log.info(
+            'V-REP instance started, remote API connection created. Everything seems to be ready.')
 
         self.started = True
 
@@ -179,7 +194,8 @@ class VREPSim:
     def load_scene(self, path_to_scene):
         log.info('Loading scene from {} in server'.format(path_to_scene))
         try:
-            check_ret(self.simxLoadScene(path_to_scene, 0, SimOpModes.blocking))
+            check_ret(self.simxLoadScene(
+                path_to_scene, 0, SimOpModes.blocking))
         except Exception:
             log.error('Scene loading failure')
             raise
@@ -233,7 +249,8 @@ class VREPSim:
         return check_ret(self.simxGetObjects(vrep.sim_handle_all, SimOpModes.blocking))
 
     def get_object_handle(self, name):
-        handle, = check_ret(self.simxGetObjectHandle(name, SimOpModes.blocking))
+        handle, = check_ret(self.simxGetObjectHandle(
+            name, SimOpModes.blocking))
         return handle
 
     def get_object_by_handle(self, handle, is_joint=True):
@@ -318,7 +335,8 @@ class VREPSim:
                 ),
                 ignore_one=True
             )
-        raise ValueError('Unsopported signal type: {}'.format(type(signal_val)))
+        raise ValueError(
+            'Unsopported signal type: {}'.format(type(signal_val)))
 
     def get_signal(self, signal_name, signal_type):
         if signal_type == str:

@@ -85,3 +85,17 @@ class SimOpModes:
     discontinue = vrep.simx_opmode_discontinue
     buffer = vrep.simx_opmode_buffer
     remove = vrep.simx_opmode_remove
+
+class GUIItems:
+    menubar = 0x0001
+    popups = 0x0002
+    toolbar1 = 0x0004
+    toolbar2 = 0x0008
+    hierarchy = 0x0010
+    infobar = 0x0020
+    statusbar = 0x0040
+    scripteditor = 0x0080
+    scriptsimulationparameters = 0x0100
+    dialogs = 0x0200
+    browser = 0x0400
+    all_elements = 0xffff
