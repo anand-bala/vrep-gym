@@ -40,11 +40,13 @@ class VREPSim:
             port_num = int(random.random() * 1000 + 19999)
         self.port_num = port_num
 
-        if platform.system() in ('Linux', 'Darwin'):
+        if platform.system() in ('Linux',):
             vrep_exec = shutil.which('vrep.sh', os.X_OK)
         else:
             vrep_exec = shutil.which('vrep', os.X_OK)
-
+        if vrep_exec is None:
+            log.error('Unable to find V-REP executable in env PATH')
+            raise RuntimeError('V-REP executable not found: vrep.sh, vrep, vrep.exe')
         log.info('Using V-REP executable: {}'.format(vrep_exec))
 
         launch_args = [
@@ -68,7 +70,10 @@ class VREPSim:
         if model:
             launch_args.append('{}'.format(model))
 
+        log.debug('CMD: {}'.format(' '.join(launch_args)))
+
         # A reference to the instance of the V-REP sim
+        self.launch_args = launch_args
         self.instance = _ProcInstance(launch_args)
 
         # clientID of the instance when connected to server,
@@ -128,7 +133,7 @@ class VREPSim:
         log.info('Connected to V-REP Instance at 127.0.0.1:{}'.format(self.port_num))
 
         objs, = check_ret(self.simxGetObjects(vrep.sim_handle_all, SimOpModes.blocking))
-        log.info('Number of objects in scene: ', len(objs))
+        log.info('Number of objects in scene: ' + str(len(objs)))
 
         # Send some non-blocking data to V-REP
         self.simxAddStatusbarMessage('Hello V-REP!', SimOpModes.oneshot)
@@ -154,6 +159,12 @@ class VREPSim:
 
         log.info('V-REP Instance has been shut down')
         return self
+
+    def reset_toggle_headless(self):
+        if '-h' in self.launch_args:
+            self.launch_args.remove('-h')
+        else:
+            self.launch_args.insert(0, '-h')
 
     def load_scene(self, path_to_scene):
         log.info('Loading scene from {} in server'.format(path_to_scene))
@@ -193,7 +204,7 @@ class VREPSim:
         check_ret(self.simxStartSimulation(SimOpModes.blocking))
         self.sim_running = True
 
-    def make_simulation_synchronous(self, sync):
+    def make_simulation_synchronous(self, sync=True):
         if not self.sim_running:
             log.info('Simulation doesn\'t seem to be running. Starting up')
             self.start_simulation(sync)
@@ -267,3 +278,55 @@ class VREPSim:
             params[3],  # bytes
             SimOpModes.blocking
         ))
+
+    def set_signal(self, signal_name, signal_val):
+        if isinstance(signal_val, str):
+            return check_ret(
+                self.simxSetStringSignal(
+                    signal_name,
+                    signal_val,
+                    SimOpModes.oneshot,
+                )
+            )
+        if isinstance(signal_val, int):
+            return check_ret(
+                self.simxSetIntegerSignal(
+                    signal_name,
+                    signal_val,
+                    SimOpModes.oneshot,
+                )
+            )
+        if isinstance(signal_val, float):
+            return check_ret(
+                self.simxSetFloatSignal(
+                    signal_name,
+                    signal_val,
+                    SimOpModes.oneshot,
+                )
+            )
+        raise ValueError('Unsopported signal type: {}'.format(type(signal_val)))
+
+    def get_signal(self, signal_name, signal_type):
+        if signal_type == str:
+            return check_ret(
+                self.simxGetStringSignal(
+                    signal_name,
+                    SimOpModes.blocking,
+                )
+            )
+        if signal_type == int:
+            return check_ret(
+                self.simxGetIntegerSignal(
+                    signal_name,
+                    SimOpModes.blocking,
+                )
+            )
+        if signal_type == float:
+            return check_ret(
+                self.simxGetFloatSignal(
+                    signal_name,
+                    SimOpModes.blocking,
+                )
+            )
+        raise ValueError('Unsopported signal type: {}'.format(signal_type))
+        

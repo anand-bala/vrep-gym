@@ -29,13 +29,6 @@ def cleanup():
 log = logging.getLogger('VREP.API')
 
 
-@atexit.register
-def cleanup():
-    global PROC_LIST
-    for p in PROC_LIST:  # type: _ProcInstance
-        p.end()
-
-
 class _ProcInstance:
     def __init__(self, args):
         self.args = args
@@ -44,16 +37,17 @@ class _ProcInstance:
 
     def start(self):
         log.info('Starting V-REP Instance...')
+        log.debug(' '.join(self.args))
         try:
             self.inst = sp.Popen(self.args)
         except EnvironmentError:
-            log.error('Launching Instance, cannot find executable at', self.args[0])
+            log.error('Launching Instance, cannot find executable at {}'.format(self.args[0]))
             raise
 
         return self
 
     def is_alive(self):
-        return True if self.inst.poll() is None else False
+        return True if self.inst and self.inst.poll() is None else False
 
     def end(self):
         log.info('Terminating V-REP Instance...')
@@ -62,7 +56,7 @@ class _ProcInstance:
             retcode = self.inst.wait()
         else:
             retcode = self.inst.returncode
-        log.info('V-REP Instance exited with code:', retcode)
+        log.info('V-REP Instance exited with code: {}'.format(retcode))
         return self
 
 

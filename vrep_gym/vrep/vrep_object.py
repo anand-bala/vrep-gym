@@ -24,11 +24,23 @@ class VREPObject:
         self.handle = handle
         self.is_joint = is_joint
 
-    def get_orientation(self, relative_to=None):
+        # Flags if values have been read in streaming mode
+        self.str_ori = False
+        self.str_pos = False
+        self.str_vel = False
+
+    def get_orientation(self, relative_to=None, stream=False):
+        mode = blocking
+        if stream:
+            if self.str_ori:
+                mode = SimOpModes.buffer
+            else:
+                mode = SimOpModes.streaming
+            self.str_ori = True
         eulerAngles, = check_ret(self.env.simxGetObjectOrientation(
             self.handle,
             -1 if relative_to is None else relative_to.handle,
-            blocking))
+            mode))
         return eulerAngles
 
     def set_orientation(self, x, y, z, relative_to=None):
@@ -39,11 +51,18 @@ class VREPObject:
             blocking
         ))
 
-    def get_position(self, relative_to=None):
+    def get_position(self, relative_to=None, stream=False):
+        mode = blocking
+        if stream:
+            if self.str_pos:
+                mode = SimOpModes.buffer
+            else:
+                mode = SimOpModes.streaming
+            self.str_pos = True
         position, = check_ret(self.env.simxGetObjectPosition(
             self.handle,
             -1 if relative_to is None else relative_to.handle,
-            blocking))
+            mode))
         return position
 
     def set_position(self, x, y, z, relative_to=None):
@@ -54,11 +73,18 @@ class VREPObject:
             blocking))
         return position
 
-    def get_velocity(self):
+    def get_velocity(self, stream=False):
+        mode = blocking
+        if stream:
+            if self.str_pos:
+                mode = SimOpModes.buffer
+            else:
+                mode = SimOpModes.streaming
+            self.str_pos = True
         return check_ret(self.env.simxGetObjectVelocity(
             self.handle,
             # -1 if relative_to is None else relative_to.handle,
-            blocking))
+            mode))
         # linearVel, angularVel
 
     def set_joint_velocity(self, v):
@@ -87,7 +113,7 @@ class VREPObject:
             -deg2rad(angle),
             blocking))
 
-    def get_joint_angle(self):
+    def get_joint_angle(self, stream=False):
         self._check_joint()
         angle = check_ret(
             self.env.simxGetJointPosition(
@@ -97,7 +123,7 @@ class VREPObject:
         )
         return -rad2deg(angle[0])
 
-    def get_joint_force(self):
+    def get_joint_force(self, stream=False):
         self._check_joint()
         force = check_ret(
             self.env.simxGetJointForce(
