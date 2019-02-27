@@ -27,7 +27,9 @@ class VREPEnv(gym.Env, ABC):
     }
 
     def __init__(self, *args, **kwargs):
+        kwargs['quit_on_complete'] = True
         self.sim = vrep.VREPSim(*args, **kwargs)
+        self.sim.start()
 
         self.headless = kwargs.get('headless', False)
 
@@ -41,7 +43,7 @@ class VREPEnv(gym.Env, ABC):
         if done:
             self.reset()
         return obs, rew, done, info
-        
+
     @abstractmethod
     def _do_action(self, action):
         pass
@@ -49,7 +51,7 @@ class VREPEnv(gym.Env, ABC):
     @abstractmethod
     def _get_obs(self):
         pass
-    
+
     @abstractmethod
     def _get_reward(self):
         pass
@@ -57,9 +59,12 @@ class VREPEnv(gym.Env, ABC):
     @abstractmethod
     def _get_done(self):
         pass
-    
+
     def reset(self):
+        log.debug('Resetting VREPEnv')
         if not self.sim.started:
+            self.sim.start()
+        if not self.sim.sim_running:
             self.sim.start_blocking_simulation()
         self._do_reset()
         return self._get_obs()
@@ -75,9 +80,10 @@ class VREPEnv(gym.Env, ABC):
         return
 
     def close(self):
-        self.sim.end()
+        self.sim.stop_simulation()
+        # self.sim.end()
         super().close()
 
-    
 
-    
+
+

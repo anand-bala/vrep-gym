@@ -13,6 +13,8 @@ TIME_THRESHOLD = 1000
 UPPER_BOUNDS = np.array([-2.5, -2.5, 0.5])
 LOWER_BOUNDS = np.array([2.5, 2.5, 2.5])
 
+import logging
+log = logging.getLogger(__name__)
 
 class DroneStates:
     FOLLOW_REF = 0
@@ -65,10 +67,10 @@ class QuadrotorPositionControl(VREPEnv):
     We want the drone to reach the position and hover so, we use the (modified)
     reward function from https://arxiv.org/pdf/1707.05110.pdf
 
-    cost_t 
-        = 4e-3 * ||error(p_t)|| 
-        + 5e-4 * ||vel_t|| 
-        + 2e-4 * ||angle_t|| 
+    cost_t
+        = 4e-3 * ||error(p_t)||
+        + 5e-4 * ||vel_t||
+        + 2e-4 * ||angle_t||
         + 3e-4 * ||avel_t||
     r_t = -cost_t
 
@@ -91,11 +93,18 @@ class QuadrotorPositionControl(VREPEnv):
 
         self.time_step = 0
 
-    def _do_reset(self):
+        self.collision = False
 
+    def _do_reset(self):
         self.drone = self.sim.get_object_by_name('Quadricopter')
         self.goal = self.sim.get_object_by_name('Quadricopter_goal')
         self.ref = self.sim.get_object_by_name('Quadricopter_ref')
+
+        drone_pos = self.drone.get_position(stream=True)
+        drone_ori = self.drone.get_orientation(stream=True)
+        drone_lv, drone_av = self.drone.get_velocity(stream=True)
+
+        goal_pos = np.array(self.goal.get_position(stream=True))
 
         self._rand_init_drone()
         self._gen_goal()
@@ -109,15 +118,25 @@ class QuadrotorPositionControl(VREPEnv):
 
     def _rand_init_drone(self):
         drone_pos = np.random.uniform(LOWER_BOUNDS, UPPER_BOUNDS)
-        self.drone.set_position(*drone_pos)
-        self.ref.set_position(*drone_pos)
-        self.sim.set_signal('drone_state', DroneStates.FOLLOW_REF)
+        log.debug('Resetting drone to: {}'.format(drone_pos.tolist()))
+        # TODO: ANother hack
+        self.sim.call_script_function(
+            'reset_quad_position',
+            (
+                [],
+                drone_pos.tolist(),
+                [],
+                ''
+            ),
+            script_name='Quadricopter'
+        )
 
     def _do_action(self, action: np.ndarray):
         assert action.shape == ACTION_SPACE
         if self.sim.get_signal('drone_state', int) != DroneStates.PROP_CONTROL:
             self.sim.set_signal('drone_state', DroneStates.PROP_CONTROL)
 
+        log.debug('Setting actions: {}'.format(action.tolist()))
         for i in range(ACTION_SPACE[0]):
             self.sim.set_signal('prop{}_vel'.format(i + 1), action[i])
 
@@ -129,7 +148,7 @@ class QuadrotorPositionControl(VREPEnv):
         # drone = np.array(self.drone.get_position(stream=True))
         # dist = np.linalg.norm(goal_pos - drone)
 
-        return (self.time_step >= TIME_THRESHOLD)
+        return (self.time_step >= TIME_THRESHOLD) or self.collision
 
     def _get_obs(self):
         drone_pos = self.drone.get_position(stream=True)
@@ -139,10 +158,13 @@ class QuadrotorPositionControl(VREPEnv):
         goal_pos = np.array(self.goal.get_position(stream=True))
 
         # TODO: Hack because the only collidable object is floor
-        if drone_pos[2] <= 0.0125:
+        if drone_pos[2] <= 0.0155:
             collision = 1
         else:
             collision = 0
+
+        self.collision = bool(collision)
+
         return np.concatenate([
             drone_pos, drone_ori,
             drone_lv, drone_av,

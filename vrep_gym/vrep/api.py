@@ -17,16 +17,26 @@ except Exception:
     print('')
     raise
 
+import atexit
 import inspect
 import os
 import platform
 import random
 import shutil
 import types
+from collections import deque
 
 from .utils import check_ret, _ProcInstance, SimOpModes, log
 from .vrep_object import VREPObject
 
+
+PROC_LIST = deque()
+
+@atexit.register
+def cleanup():
+    global PROC_LIST
+    for p in PROC_LIST:  # type: _ProcInstance
+        p.end()
 
 class VREPSim:
 
@@ -40,9 +50,8 @@ class VREPSim:
             port_num = int(random.random() * 1000 + 19999)
         self.port_num = port_num
 
-        if platform.system() in ('Linux',):
-            vrep_exec = shutil.which('vrep.sh', os.X_OK)
-        else:
+        vrep_exec = shutil.which('vrep.sh', os.X_OK)
+        if vrep_exec is None:
             vrep_exec = shutil.which('vrep', os.X_OK)
         if vrep_exec is None:
             log.error('Unable to find V-REP executable in env PATH')
@@ -101,6 +110,8 @@ class VREPSim:
         for name in vrep_methods:
             assign_from_vrep_to_self(name)
 
+        PROC_LIST.append(self)
+
     def start(self):
         if self.started:
             log.error('V-REP Instance has already been started...')
@@ -148,8 +159,7 @@ class VREPSim:
         return self
 
     def end(self):
-        log.info('V-REP Instance shutting down...')
-
+        log.info('V-REP Instance shutting down: {}'.format(self.sim_running))
         if self.sim_running:
             self.stop_simulation()
         self.simxFinish()
@@ -212,6 +222,7 @@ class VREPSim:
             check_ret(self.simxSynchronous(sync))
 
     def stop_simulation(self):
+        log.info('Stopping V-REP simulation')
         check_ret(self.simxStopSimulation(SimOpModes.oneshot), ignore_one=True)
         self.sim_running = False
 
@@ -286,7 +297,8 @@ class VREPSim:
                     signal_name,
                     signal_val,
                     SimOpModes.oneshot,
-                )
+                ),
+                ignore_one=True
             )
         if isinstance(signal_val, int):
             return check_ret(
@@ -294,7 +306,8 @@ class VREPSim:
                     signal_name,
                     signal_val,
                     SimOpModes.oneshot,
-                )
+                ),
+                ignore_one=True
             )
         if isinstance(signal_val, float):
             return check_ret(
@@ -302,7 +315,8 @@ class VREPSim:
                     signal_name,
                     signal_val,
                     SimOpModes.oneshot,
-                )
+                ),
+                ignore_one=True
             )
         raise ValueError('Unsopported signal type: {}'.format(type(signal_val)))
 
@@ -329,4 +343,3 @@ class VREPSim:
                 )
             )
         raise ValueError('Unsopported signal type: {}'.format(signal_type))
-        

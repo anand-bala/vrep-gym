@@ -5,6 +5,25 @@ LAND = 2 -- REF_z = 0, prop_vel = {0, 0, 0, 0}
 
 PROP_VEL_SIGNALS = {"prop1_vel", "prop2_vel", "prop3_vel", "prop4_vel"}
 
+function reset_quad_position(inInts, inFloats, inStrings, inBuffer)
+    -- inInts, inFloats and inStrings are tables
+    -- inBuffer is a string
+
+    local quadObjects = sim.getObjectsInTree(quadHandle, sim.sim_handle_all, 0)
+    for i = 1, #quadObjects, 1 do
+        sim.resetDynamicObject(quadObjects[i])
+    end
+    sim.setConfigurationTree(quadInitialConfig)
+
+    local x, y, z = unpack(inFloats)
+    sim.setObjectPosition(quadHandle, -1, {x, y, z})
+    sim.setObjectPosition(targetObj, -1, {x, y, z})
+    sim.setIntegerSignal("drone_state", FOLLOW_REF)
+
+    -- Always return 3 tables and a string, e.g.:
+    return {}, {}, {}, ""
+end
+
 function sysCall_init()
     -- Make sure we have version 2.4.13 or above (the particles are not supported otherwise)
     v = sim.getInt32Parameter(sim.intparam_program_version)
@@ -19,6 +38,9 @@ function sysCall_init()
             {0.8, 0, 0, 0, 0, 0}
         )
     end
+
+    quadHandle = sim.getObjectHandle("Quadricopter")
+    quadInitialConfig = sim.getConfigurationTree(quadHandle)
 
     -- Detach the ref sphere:
     targetObj = sim.getObjectHandle("Quadricopter_ref")

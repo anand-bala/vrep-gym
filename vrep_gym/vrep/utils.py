@@ -11,19 +11,8 @@ except Exception:
     print('')
     raise
 
-import atexit
 import logging
 import subprocess as sp
-from collections import deque
-
-PROC_LIST = deque()
-
-
-@atexit.register
-def cleanup():
-    global PROC_LIST
-    for p in PROC_LIST:  # type: _ProcInstance
-        p.end()
 
 
 log = logging.getLogger('VREP.API')
@@ -33,7 +22,6 @@ class _ProcInstance:
     def __init__(self, args):
         self.args = args
         self.inst = None
-        PROC_LIST.append(self)
 
     def start(self):
         log.info('Starting V-REP Instance...')
