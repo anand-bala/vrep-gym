@@ -23,7 +23,7 @@ def get_scene(scene_name):
 
 class VREPEnv(gym.Env, ABC):
     metadata = {
-        'render.modes': ['human']
+        'render.modes': ['human', 'headless']
     }
 
     def __init__(self, *args, **kwargs):
