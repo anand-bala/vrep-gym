@@ -83,6 +83,7 @@ class QuadrotorPositionControl(VREPEnv):
         super().__init__(*args, **kwargs)
 
         self.drone = None # type: VREPObject
+        self.drone_base = None # type: VREPObject
         self.goal = None # type: VREPObject
         self.ref = None # type: VREPObject
 
@@ -97,14 +98,15 @@ class QuadrotorPositionControl(VREPEnv):
 
     def _do_reset(self):
         self.drone = self.sim.get_object_by_name('Quadricopter')
+        self.drone_base = self.sim.get_object_by_name('Quadricopter_base')
         self.goal = self.sim.get_object_by_name('Quadricopter_goal')
         self.ref = self.sim.get_object_by_name('Quadricopter_ref')
 
-        drone_pos = self.drone.get_position(stream=True)
-        drone_ori = self.drone.get_orientation(stream=True)
-        drone_lv, drone_av = self.drone.get_velocity(stream=True)
+        self.drone_base.get_position(stream=True)
+        self.drone_base.get_orientation(stream=True)
+        self.drone_base.get_velocity(stream=True)
 
-        goal_pos = np.array(self.goal.get_position(stream=True))
+        self.goal.get_position(stream=True)
 
         self._rand_init_drone()
         self._gen_goal()
@@ -151,11 +153,11 @@ class QuadrotorPositionControl(VREPEnv):
         return (self.time_step >= TIME_THRESHOLD) or self.collision
 
     def _get_obs(self):
-        drone_pos = self.drone.get_position(stream=True)
-        drone_ori = self.drone.get_orientation(stream=True)
-        drone_lv, drone_av = self.drone.get_velocity(stream=True)
+        drone_pos = self.drone_base.get_position(stream=True)
+        drone_ori = self.drone_base.get_orientation(stream=True)
+        drone_lv, drone_av = self.drone_base.get_velocity(stream=True)
 
-        goal_pos = np.array(self.goal.get_position(stream=True))
+        goal_pos = self.goal.get_position(stream=True)
 
         # TODO: Hack because the only collidable object is floor
         if drone_pos[2] <= 0.0155:
@@ -173,9 +175,9 @@ class QuadrotorPositionControl(VREPEnv):
         ])
 
     def _get_reward(self):
-        drone_pos = self.drone.get_position(stream=True)
-        drone_ori = self.drone.get_orientation(stream=True)
-        drone_lv, drone_av = self.drone.get_velocity(stream=True)
+        drone_pos = self.drone_base.get_position(stream=True)
+        drone_ori = self.drone_base.get_orientation(stream=True)
+        drone_lv, drone_av = self.drone_base.get_velocity(stream=True)
 
         goal_pos = np.array(self.goal.get_position(stream=True))
 
