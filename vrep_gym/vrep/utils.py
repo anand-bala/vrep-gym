@@ -19,15 +19,17 @@ log = logging.getLogger('VREP.API')
 
 
 class _ProcInstance:
-    def __init__(self, args):
+    def __init__(self, args, log_file=None):
         self.args = args
         self.inst = None
+
+        self.log_file = None if log_file is not None else open(log_file, 'w')
 
     def start(self):
         log.info('Starting V-REP Instance...')
         log.debug(' '.join(self.args))
         try:
-            self.inst = sp.Popen(self.args)
+            self.inst = sp.Popen(self.args, stdout=self.log_file, stderr=self.log_file)
         except EnvironmentError:
             log.error('Launching Instance, cannot find executable at {}'.format(self.args[0]))
             raise
@@ -44,6 +46,8 @@ class _ProcInstance:
             retcode = self.inst.wait()
         else:
             retcode = self.inst.returncode
+        if self.log_file is not None and not self.log_file.closed:
+            self.log_file.close()
         log.info('V-REP Instance exited with code: {}'.format(retcode))
         return self
 

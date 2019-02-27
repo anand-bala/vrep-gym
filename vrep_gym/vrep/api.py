@@ -29,6 +29,7 @@ from collections import deque
 from .utils import check_ret, _ProcInstance, SimOpModes, log, GUIItems
 from .vrep_object import VREPObject
 
+from datetime import datetime
 
 PROC_LIST = deque()
 
@@ -93,7 +94,10 @@ class VREPSim:
 
         # A reference to the instance of the V-REP sim
         self.launch_args = launch_args
-        self.instance = _ProcInstance(launch_args)
+        log_dir = os.path.abspath('./log')
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = 'vrep_{}_{}.log'.format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), port_num)
+        self.instance = _ProcInstance(launch_args, os.path.join(log_dir, log_file))
 
         # clientID of the instance when connected to server,
         # to differentiate between instances in the driver
