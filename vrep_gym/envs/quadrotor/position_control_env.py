@@ -138,7 +138,8 @@ class QuadrotorPositionControl(VREPEnv):
         if self.sim.get_signal('drone_state', int) != DroneStates.PROP_CONTROL:
             self.sim.set_signal('drone_state', DroneStates.PROP_CONTROL)
 
-        log.debug('Setting actions: {}'.format(action.tolist()))
+        action = action.tolist()
+        log.debug('Setting actions: {}'.format(action))
         for i in range(ACTION_SPACE[0]):
             self.sim.set_signal('prop{}_vel'.format(i + 1), action[i])
 
