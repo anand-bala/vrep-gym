@@ -90,7 +90,7 @@ class VREPSim:
         if model:
             launch_args.append('{}'.format(model))
 
-        log.debug('CMD: {}'.format(' '.join(launch_args)))
+        log.info('CMD: {}'.format(' '.join(launch_args)))
 
         # A reference to the instance of the V-REP sim
         self.launch_args = launch_args
