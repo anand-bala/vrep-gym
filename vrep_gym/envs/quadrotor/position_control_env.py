@@ -161,7 +161,7 @@ class QuadrotorPositionControl(VREPEnv):
         goal_pos = self.goal.get_position(stream=True)
 
         # TODO: Hack because the only collidable object is floor
-        if drone_pos[2] <= 0.0155:
+        if drone_pos[2] <= 0.05:
             collision = 1
         else:
             collision = 0
