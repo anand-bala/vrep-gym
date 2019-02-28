@@ -47,8 +47,6 @@ class _ProcInstance:
             retcode = self.inst.wait()
         else:
             retcode = self.inst.returncode
-        if self.log_file is not None and not self.log_file.closed:
-            self.log_file.close()
         log.info('V-REP Instance exited with code: {}'.format(retcode))
         return self
 
