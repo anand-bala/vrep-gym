@@ -30,9 +30,9 @@ class VREPEnv(gym.Env, ABC):
     def __init__(self, *args, **kwargs):
         kwargs['quit_on_complete'] = True
         kwargs['headless'] = True
-        gui_arg = os.environ.get('VREP_GUI', False)
-        headless = gui_arg not in ['YES', 'Yes', 'Y', 'ON', 'On', 'on', '1']
-
+        gui_arg = os.environ.get('VREP_GUI')
+        kwargs['headless'] = gui_arg not in ['YES', 'Yes', 'Y', 'ON', 'On', 'on', '1']
+        log.info('VREP_GUI = {}'.format(gui_arg))
         self.sim = vrep.VREPSim(*args, **kwargs)
         self.sim.start()
 
