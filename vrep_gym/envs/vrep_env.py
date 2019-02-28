@@ -29,7 +29,9 @@ class VREPEnv(gym.Env, ABC):
 
     def __init__(self, *args, **kwargs):
         kwargs['quit_on_complete'] = True
-        kwargs['headless'] = os.environ.get('VREP_HEADLESS_MODE', False)
+        headless_arg = os.environ.get('VREP_HEADLESS_MODE', False)
+        if headless_arg and headless_arg in ['On', 'ON', '1']:
+            kwargs['headless'] = True
         kwargs['gui_elements_disable'] = (
             GUIItems.all_elements
             & (~GUIItems.statusbar)
