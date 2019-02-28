@@ -23,13 +23,14 @@ class _ProcInstance:
         self.args = args
         self.inst = None
 
-        self.log_file = None if log_file is not None else open(log_file, 'w')
+        self.log_file = log_file
 
     def start(self):
         log.info('Starting V-REP Instance...')
         log.debug(' '.join(self.args))
         try:
-            self.inst = sp.Popen(self.args, stdout=self.log_file, stderr=self.log_file)
+            with open(self.log_file, 'w') as log_file:
+                self.inst = sp.Popen(self.args, stdout=log_file, stderr=sp.STDOUT)
         except EnvironmentError:
             log.error('Launching Instance, cannot find executable at {}'.format(self.args[0]))
             raise

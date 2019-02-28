@@ -97,6 +97,7 @@ class VREPSim:
         log_dir = os.path.abspath('./log')
         os.makedirs(log_dir, exist_ok=True)
         log_file = 'vrep_{}_{}.log'.format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), port_num)
+        log.info('Logging to: {}'.format(log_file))
         self.instance = _ProcInstance(launch_args, os.path.join(log_dir, log_file))
 
         # clientID of the instance when connected to server,
