@@ -32,8 +32,8 @@ class VREPEnv(gym.Env, ABC):
         kwargs['headless'] = os.environ.get('VREP_HEADLESS_MODE', False)
         kwargs['gui_elements_disable'] = (
             GUIItems.all_elements
-            | (~GUIItems.statusbar)
-            | (~GUIItems.dialogs)
+            & (~GUIItems.statusbar)
+            & (~GUIItems.dialogs)
         )
         self.sim = vrep.VREPSim(*args, **kwargs)
         self.sim.start()
