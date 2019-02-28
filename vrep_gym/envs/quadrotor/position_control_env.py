@@ -1,3 +1,4 @@
+import logging
 from gym import error, spaces, utils
 import numpy as np
 
@@ -10,11 +11,11 @@ ACTION_SPACE = (4,)
 DIST_THRESHOLD = 0.5
 TIME_THRESHOLD = 1000
 
-UPPER_BOUNDS = np.array([-2.5, -2.5, 0.5])
-LOWER_BOUNDS = np.array([2.5, 2.5, 2.5])
+LOWER_BOUNDS = np.array([-2.5, -2.5, 0.5])
+UPPER_BOUNDS = np.array([2.5, 2.5, 2.5])
 
-import logging
 log = logging.getLogger(__name__)
+
 
 class DroneStates:
     FOLLOW_REF = 0
@@ -61,6 +62,14 @@ class QuadrotorPositionControl(VREPEnv):
 
     Time Steps >= 1000 (1000 * 50ms = 50s)
 
+    OR
+
+    Collision
+
+    OR
+
+    Out of bounds (box above * 2)
+
     Reward function
     ---------------
 
@@ -82,10 +91,10 @@ class QuadrotorPositionControl(VREPEnv):
         kwargs['scene'] = self.scene_file
         super().__init__(*args, **kwargs)
 
-        self.drone = None # type: VREPObject
-        self.drone_base = None # type: VREPObject
-        self.goal = None # type: VREPObject
-        self.ref = None # type: VREPObject
+        self.drone = None  # type: VREPObject
+        self.drone_base = None  # type: VREPObject
+        self.goal = None  # type: VREPObject
+        self.ref = None  # type: VREPObject
 
         self.observation_space = spaces.Box(-np.inf,
                                             np.inf, OBSERVATION_SPACE, dtype=np.float)
@@ -93,8 +102,6 @@ class QuadrotorPositionControl(VREPEnv):
                                        np.inf, ACTION_SPACE, dtype=np.float)
 
         self.time_step = 0
-
-        self.collision = False
 
     def _do_reset(self):
         self.drone = self.sim.get_object_by_name('Quadricopter')
@@ -145,13 +152,48 @@ class QuadrotorPositionControl(VREPEnv):
 
         self.time_step += 1
 
+    def _get_collision(self):
+        drone_pos = self.drone_base.get_position(stream=True)
+
+        lower_bounds = LOWER_BOUNDS * 2
+        # TODO: Hack because the only collidable object is floor
+        lower_bounds[2] = 0.05  # Collision with ground
+
+        upper_bounds = UPPER_BOUNDS * 2
+
+        return any(
+            [
+                (lower_bounds[i] > drone_pos[i]
+                 or drone_pos[i] > upper_bounds[i])
+                for i in range(3)
+            ]
+        )
+
     def _get_done(self):
         # Compute distance between goal and drone
         # goal_pos = np.array(self.goal.get_position(stream=True))
         # drone = np.array(self.drone.get_position(stream=True))
         # dist = np.linalg.norm(goal_pos - drone)
 
-        return (self.time_step >= TIME_THRESHOLD) or self.collision
+        out_of_bounds = False
+
+        drone_pos = self.drone_base.get_position(stream=True)
+
+        lower_bounds = LOWER_BOUNDS * 2
+        # TODO: Hack because the only collidable object is floor
+        lower_bounds[2] = 0.05  # Collision with ground
+
+        upper_bounds = UPPER_BOUNDS * 2
+
+        out_of_bounds = any(
+            [
+                (lower_bounds[i] > drone_pos[i]
+                 or drone_pos[i] > upper_bounds[i])
+                for i in range(3)
+            ]
+        )
+
+        return (self.time_step >= TIME_THRESHOLD) or out_of_bounds
 
     def _get_obs(self):
         drone_pos = self.drone_base.get_position(stream=True)
@@ -160,13 +202,7 @@ class QuadrotorPositionControl(VREPEnv):
 
         goal_pos = self.goal.get_position(stream=True)
 
-        # TODO: Hack because the only collidable object is floor
-        if drone_pos[2] <= 0.05:
-            collision = 1
-        else:
-            collision = 0
-
-        self.collision = bool(collision)
+        collision = 1.0 if self._get_collision() else 0.0
 
         return np.concatenate([
             drone_pos, drone_ori,
